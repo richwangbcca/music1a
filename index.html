@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music 1A Research Project- Richard Wang</title>
+</head>
+<body>
+    <h1>Music 1A Research Project- Richard Wang</h1>
+
+    <div id="intro">
+        <p>Thank you for participating in my Music 1A research project! In this task, you will complete
+            math problems with various background music. The first trial has no music, and the second
+            and third trials do have music. I apologize upfront for the barebones website.</p>
+        <label for="name">Enter your name:</label>
+        <input type="text" id="name" placeholder="Your name">
+        <button onclick="startTrial()">Start Trial</button>
+    </div>
+
+    <div id="trial" style="display:none;">
+        <p id="trial-text">Press Start to begin trial.</p>
+        <button id="start-button" onclick="startTrialCountdown()">Start Trial</button>
+        <div id="countdown" style="display:none;">5</div>
+    </div>
+
+    <div id="math-problems" style="display:none;">
+        <p>Solve as many problems as you can in 30 seconds:</p>
+        <div id="problems">
+            <p id="problem">3 x 6 = ?</p>
+            <input type="number" id="answer" placeholder="Your answer" oninput="checkAnswer()" onkeydown="handleKeyDown(event)">
+        </div>
+        <p>Time remaining: <span id="timer">30</span> seconds</p>
+    </div>
+
+    <div id="end" style="display:none;">
+        <p>All trials are complete. Thank you! Please download your results and upload them to the Google form.</p>
+        <button onclick="downloadResults()">Download Results</button>
+    </div>
+
+    <script>
+        let trials = ["none", "slowtempo.mp3", "fasttempo.mp3"];
+        let trialIndex = 0;
+        let problemsCompleted = [0, 0, 0];
+        let timer;
+        let trialStartTime;
+        let countdownTime = 5;
+        let countdownInterval;
+        let music;  // Keep track of the music object
+        let currentProblemAnswer;  // Store the current problem's answer
+
+        // Generate a random multiplication problem
+        function generateProblem() {
+            let num1 = Math.floor(Math.random() * 99) + 1;  // Random number between 1 and 9
+            let num2 = Math.floor(Math.random() * 9) + 1;  // Random number between 1 and 9
+            currentProblemAnswer = num1 + num2;  // Calculate the answer
+            document.getElementById("problem").innerText = `${num1} + ${num2} = ?`;
+        }
+
+        function startTrial() {
+            const name = document.getElementById("name").value;
+            if (!name) {
+                alert("Please enter your name.");
+                return;
+            }
+
+            document.getElementById("intro").style.display = "none";
+            document.getElementById("trial").style.display = "block";
+            document.getElementById("trial-text").innerText = "Trial 1 (No music) - Click Start to begin.";
+        }
+
+        function startTrialCountdown() {
+            music = new Audio(trials[trialIndex]);
+            if (trials[trialIndex] !== "none") {
+                music.play();
+            }
+            document.getElementById("start-button").style.display = "none";
+            document.getElementById("countdown").style.display = "block";
+
+            countdownTime = 5;  // Reset countdown time to 5 seconds
+            document.getElementById("countdown").innerText = countdownTime;  // Display the countdown value
+
+            // Clear any previous countdown interval and start a new one
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+            }
+
+            countdownInterval = setInterval(() => {
+                countdownTime--;
+                document.getElementById("countdown").innerText = countdownTime;
+
+                if (countdownTime <= 0) {
+                    clearInterval(countdownInterval);
+                    startTrialTimer();
+                }
+            }, 1000);
+        }
+
+        function startTrialTimer() {
+            document.getElementById("trial-text").innerText = "Solve as many problems as you can!";
+            document.getElementById("countdown").style.display = "none";
+            document.getElementById("math-problems").style.display = "block";
+
+            trialStartTime = Date.now();
+            generateProblem();  // Display the first problem
+
+            timer = setInterval(() => {
+                let timeRemaining = 30 - Math.floor((Date.now() - trialStartTime) / 1000);
+                document.getElementById("timer").innerText = timeRemaining;
+                if (timeRemaining <= 0) {
+                    clearInterval(timer);
+                    endTrial();
+                }
+            }, 1000);
+        }
+
+        function checkAnswer() {
+            let answer = parseInt(document.getElementById("answer").value);
+            if (answer === currentProblemAnswer) {
+                problemsCompleted[trialIndex]++;
+                generateProblem();  // Generate a new problem
+                document.getElementById("answer").value = "";  // Reset input box after correct answer
+            }
+        }
+
+        function handleKeyDown(event) {
+            if (event.key === 'Enter') {
+                checkAnswer();  // Automatically check answer when Enter is pressed
+                document.getElementById("answer").value = "";  // Clear input after Enter
+            }
+        }
+
+        function endTrial() {
+            if (music) {
+                music.pause();  // Stop the music when the trial ends
+                music.currentTime = 0;
+            }
+
+            trialIndex++;
+            document.getElementById("math-problems").style.display = "none";
+            if (trialIndex < trials.length) {
+                document.getElementById("trial").style.display = "block";
+                document.getElementById("trial-text").innerText = `Trial ${trialIndex + 1} - Click Start to begin.`;
+                document.getElementById("start-button").style.display = "block";
+                countdownTime = 5;  // Reset countdown for next trial
+            } else {
+                document.getElementById("end").style.display = "block";
+            }
+        }
+
+        function downloadResults() {
+            const name = document.getElementById("name").value;
+            const results = {
+                name: name,
+                trials: [
+                    { trial: 1, completed: problemsCompleted[0] },
+                    { trial: 2, completed: problemsCompleted[1] },
+                    { trial: 3, completed: problemsCompleted[2] }
+                ]
+            };
+            const fileName = `${name}_results.json`;
+            const fileBlob = new Blob([JSON.stringify(results)], { type: 'application/json' });
+            const url = URL.createObjectURL(fileBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            a.click();
+        }
+    </script>
+</body>
+</html>
